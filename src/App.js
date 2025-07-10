@@ -7,6 +7,7 @@ function App() {
   const [username, setUsername] = useState("");
   const [stickyNoteText, setStickyNoteText] = useState("");
   const [stickyNotes, setStickyNotes] = useState([]);
+  const [isDrawingMode, setIsDrawingMode] = useState(true);
   const canvasRef = useRef(null);
   let isDrawing = false;
 
@@ -282,37 +283,73 @@ function App() {
       <div style={{ marginBottom: 24 }}>
         <h2 style={{ fontSize: 20, fontWeight: "bold", marginBottom: 8 }}>Whiteboard</h2>
         
-        {/* Sticky Note Input */}
+        {/* Mode Toggle */}
         <div style={{ marginBottom: 16, display: "flex", gap: 8, alignItems: "center" }}>
-          <input
-            type="text"
-            value={stickyNoteText}
-            onChange={(e) => setStickyNoteText(e.target.value)}
-            placeholder="Type your sticky note here..."
-            style={{ 
-              flex: 1, 
-              padding: "8px 12px", 
-              borderRadius: 4, 
-              border: "1px solid #ccc",
-              fontSize: "14px"
-            }}
-            onKeyPress={(e) => e.key === 'Enter' && addStickyNote()}
-          />
           <button
-            onClick={addStickyNote}
+            onClick={() => setIsDrawingMode(true)}
             style={{
-              background: "#22c55e",
-              color: "white",
+              background: isDrawingMode ? "#3b82f6" : "#e5e7eb",
+              color: isDrawingMode ? "white" : "#374151",
               padding: "8px 16px",
               borderRadius: 4,
               border: "none",
               cursor: "pointer",
-              fontSize: "14px"
+              fontSize: "14px",
+              fontWeight: isDrawingMode ? "bold" : "normal"
             }}
           >
-            Add Note
+            ✏️ Drawing Mode
+          </button>
+          <button
+            onClick={() => setIsDrawingMode(false)}
+            style={{
+              background: !isDrawingMode ? "#3b82f6" : "#e5e7eb",
+              color: !isDrawingMode ? "white" : "#374151",
+              padding: "8px 16px",
+              borderRadius: 4,
+              border: "none",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: !isDrawingMode ? "bold" : "normal"
+            }}
+          >
+            📝 Note Mode
           </button>
         </div>
+        
+        {/* Sticky Note Input - Only show in Note Mode */}
+        {!isDrawingMode && (
+          <div style={{ marginBottom: 16, display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              type="text"
+              value={stickyNoteText}
+              onChange={(e) => setStickyNoteText(e.target.value)}
+              placeholder="Type your sticky note here..."
+              style={{ 
+                flex: 1, 
+                padding: "8px 12px", 
+                borderRadius: 4, 
+                border: "1px solid #ccc",
+                fontSize: "14px"
+              }}
+              onKeyPress={(e) => e.key === 'Enter' && addStickyNote()}
+            />
+            <button
+              onClick={addStickyNote}
+              style={{
+                background: "#22c55e",
+                color: "white",
+                padding: "8px 16px",
+                borderRadius: 4,
+                border: "none",
+                cursor: "pointer",
+                fontSize: "14px"
+              }}
+            >
+              Add Note
+            </button>
+          </div>
+        )}
 
         {/* Canvas Container with Sticky Notes */}
         <div style={{ position: "relative", display: "inline-block" }}>
@@ -337,44 +374,55 @@ function App() {
                 boxShadow: "2px 2px 8px rgba(0,0,0,0.2)",
                 minWidth: "120px",
                 maxWidth: "200px",
-                cursor: "move",
+                cursor: isDrawingMode ? "default" : "move",
                 fontSize: "12px",
                 fontFamily: "Arial, sans-serif",
-                wordWrap: "break-word"
+                wordWrap: "break-word",
+                pointerEvents: isDrawingMode ? "none" : "auto" // Only interactive in Note Mode
               }}
-              draggable
+              draggable={!isDrawingMode}
               onDragStart={(e) => {
-                e.dataTransfer.setData("text/plain", note.id);
+                if (!isDrawingMode) {
+                  e.dataTransfer.setData("text/plain", note.id);
+                }
               }}
-              onDragOver={(e) => e.preventDefault()}
+              onDragOver={(e) => {
+                if (!isDrawingMode) {
+                  e.preventDefault();
+                }
+              }}
               onDrop={(e) => {
-                e.preventDefault();
-                const rect = e.currentTarget.parentElement.getBoundingClientRect();
-                const newX = e.clientX - rect.left;
-                const newY = e.clientY - rect.top;
-                moveStickyNote(note.id, newX, newY);
+                if (!isDrawingMode) {
+                  e.preventDefault();
+                  const rect = e.currentTarget.parentElement.getBoundingClientRect();
+                  const newX = e.clientX - rect.left;
+                  const newY = e.clientY - rect.top;
+                  moveStickyNote(note.id, newX, newY);
+                }
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "4px" }}>
                 <div style={{ flex: 1, marginRight: "8px" }}>{note.text}</div>
-                <button
-                  onClick={() => deleteStickyNote(note.id)}
-                  style={{
-                    background: "rgba(255,255,255,0.7)",
-                    border: "none",
-                    borderRadius: "50%",
-                    width: "16px",
-                    height: "16px",
-                    cursor: "pointer",
-                    fontSize: "10px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center"
-                  }}
-                  title="Delete note"
-                >
-                  ×
-                </button>
+                {!isDrawingMode && (
+                  <button
+                    onClick={() => deleteStickyNote(note.id)}
+                    style={{
+                      background: "rgba(255,255,255,0.7)",
+                      border: "none",
+                      borderRadius: "50%",
+                      width: "16px",
+                      height: "16px",
+                      cursor: "pointer",
+                      fontSize: "10px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center"
+                    }}
+                    title="Delete note"
+                  >
+                    ×
+                  </button>
+                )}
               </div>
             </div>
           ))}
