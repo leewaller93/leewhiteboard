@@ -40,6 +40,43 @@ function App() {
     // eslint-disable-next-line
   }, []);
 
+  // Global mouse event listeners for dragging
+  useEffect(() => {
+    const handleGlobalMouseMove = (e) => {
+      if (draggedNote && !isDrawingMode) {
+        const container = document.querySelector('.canvas-container');
+        if (container) {
+          const rect = container.getBoundingClientRect();
+          const newX = e.clientX - rect.left - dragOffset.x;
+          const newY = e.clientY - rect.top - dragOffset.y;
+          
+          // Keep note within bounds
+          const maxX = rect.width - 120;
+          const maxY = rect.height - 50;
+          const constrainedX = Math.max(0, Math.min(newX, maxX));
+          const constrainedY = Math.max(0, Math.min(newY, maxY));
+          
+          moveStickyNote(draggedNote.id, constrainedX, constrainedY);
+        }
+      }
+    };
+
+    const handleGlobalMouseUp = () => {
+      setDraggedNote(null);
+      setDragOffset({ x: 0, y: 0 });
+    };
+
+    if (!isDrawingMode) {
+      document.addEventListener('mousemove', handleGlobalMouseMove);
+      document.addEventListener('mouseup', handleGlobalMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [draggedNote, dragOffset, isDrawingMode]);
+
   const fetchPhases = async () => {
     const response = await fetch("https://whiteboard-backend-1cdi.onrender.com/api/phases");
     const data = await response.json();
@@ -168,15 +205,24 @@ function App() {
       setDraggedNote(note);
       setDragOffset({ x: offsetX, y: offsetY });
       e.preventDefault();
+      e.stopPropagation();
     }
   };
 
   const handleMouseMove = (e) => {
     if (draggedNote && !isDrawingMode) {
-      const rect = e.currentTarget.getBoundingClientRect();
+      const container = e.currentTarget;
+      const rect = container.getBoundingClientRect();
       const newX = e.clientX - rect.left - dragOffset.x;
       const newY = e.clientY - rect.top - dragOffset.y;
-      moveStickyNote(draggedNote.id, newX, newY);
+      
+      // Keep note within bounds
+      const maxX = rect.width - 120; // minWidth of note
+      const maxY = rect.height - 50; // approximate height of note
+      const constrainedX = Math.max(0, Math.min(newX, maxX));
+      const constrainedY = Math.max(0, Math.min(newY, maxY));
+      
+      moveStickyNote(draggedNote.id, constrainedX, constrainedY);
     }
   };
 
@@ -381,10 +427,8 @@ function App() {
 
         {/* Canvas Container with Sticky Notes */}
         <div 
+          className="canvas-container"
           style={{ position: "relative", display: "inline-block" }}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
         >
           <canvas
             ref={canvasRef}
@@ -418,8 +462,10 @@ function App() {
                 pointerEvents: isDrawingMode ? "none" : "auto", // Only interactive in Note Mode
                 userSelect: "none", // Prevent text selection during drag
                 opacity: isDrawingMode ? 0.7 : 1, // Make notes slightly transparent in drawing mode
-                transition: "opacity 0.2s ease",
-                zIndex: draggedNote?.id === note.id ? 1000 : 1 // Bring dragged note to front
+                transition: draggedNote?.id === note.id ? "none" : "opacity 0.2s ease", // No transition while dragging
+                zIndex: draggedNote?.id === note.id ? 1000 : 1, // Bring dragged note to front
+                transform: draggedNote?.id === note.id ? "scale(1.05)" : "scale(1)", // Slight scale when dragging
+                boxShadow: draggedNote?.id === note.id ? "4px 4px 12px rgba(0,0,0,0.3)" : (isDrawingMode ? "1px 1px 4px rgba(0,0,0,0.1)" : "2px 2px 8px rgba(0,0,0,0.2)")
               }}
               onMouseDown={(e) => handleMouseDown(e, note)}
             >
