@@ -27,7 +27,7 @@ function App() {
   }, []);
 
   const fetchPhases = async () => {
-    const response = await fetch("http://localhost:5000/api/phases");
+    const response = await fetch("https://whiteboard-backend-1cdi.onrender.com/api/phases");
     const data = await response.json();
     setPhases([
       { name: "Design", items: data.filter((item) => item.phase === "Design") },
@@ -38,7 +38,7 @@ function App() {
   };
 
   const fetchTeam = async () => {
-    const response = await fetch("http://localhost:5000/api/team");
+    const response = await fetch("https://whiteboard-backend-1cdi.onrender.com/api/team");
     const data = await response.json();
     setTeam(data);
   };
@@ -122,7 +122,7 @@ function App() {
       alert("Please enter a valid username and email");
       return;
     }
-    const response = await fetch("http://localhost:5000/api/invite", {
+    const response = await fetch("https://whiteboard-backend-1cdi.onrender.com/api/invite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, email }),
@@ -137,7 +137,7 @@ function App() {
   };
 
   const updatePhaseItem = async (id, phase, updatedItem) => {
-    const response = await fetch(`http://localhost:5000/api/phases/${id}`, {
+    const response = await fetch(`https://whiteboard-backend-1cdi.onrender.com/api/phases/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...updatedItem, phase }),
@@ -148,7 +148,7 @@ function App() {
   };
 
   const addPhaseItem = async (phase) => {
-    const response = await fetch("http://localhost:5000/api/phases", {
+    const response = await fetch("https://whiteboard-backend-1cdi.onrender.com/api/phases", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -176,7 +176,7 @@ function App() {
       alert("Please enter a goal");
       return;
     }
-    const response = await fetch("http://localhost:5000/api/phases", {
+    const response = await fetch("https://whiteboard-backend-1cdi.onrender.com/api/phases", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...newTask, assigned_to: newTask.assigned_to || "team" }),
