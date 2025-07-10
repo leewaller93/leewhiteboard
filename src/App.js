@@ -19,6 +19,17 @@ function App() {
     assigned_to: "team"
   });
 
+  // Debounced update function
+  const debouncedUpdate = useRef(null);
+  const debouncedUpdatePhaseItem = (id, phase, updatedItem) => {
+    if (debouncedUpdate.current) {
+      clearTimeout(debouncedUpdate.current);
+    }
+    debouncedUpdate.current = setTimeout(() => {
+      updatePhaseItem(id, phase, updatedItem);
+    }, 500); // Wait 500ms after user stops typing
+  };
+
   // Fetch initial data
   useEffect(() => {
     fetchPhases();
@@ -137,13 +148,25 @@ function App() {
   };
 
   const updatePhaseItem = async (id, phase, updatedItem) => {
-    const response = await fetch(`https://whiteboard-backend-1cdi.onrender.com/api/phases/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...updatedItem, phase }),
-    });
-    if (response.ok) {
-      fetchPhases();
+    try {
+      const response = await fetch(`https://whiteboard-backend-1cdi.onrender.com/api/phases/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...updatedItem, phase }),
+      });
+      if (response.ok) {
+        // Update local state immediately for better UX
+        setPhases(prevPhases => 
+          prevPhases.map(p => ({
+            ...p,
+            items: p.items.map(item => 
+              item.id === id ? { ...item, ...updatedItem } : item
+            )
+          }))
+        );
+      }
+    } catch (error) {
+      console.error('Error updating item:', error);
     }
   };
 
@@ -327,9 +350,20 @@ function App() {
                     <input
                       type="text"
                       value={item.goal}
-                      onChange={(e) =>
-                        updatePhaseItem(item.id, phase.name, { ...item, goal: e.target.value })
-                      }
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        // Update local state immediately
+                        setPhases(prevPhases => 
+                          prevPhases.map(p => ({
+                            ...p,
+                            items: p.items.map(i => 
+                              i.id === item.id ? { ...i, goal: newValue } : i
+                            )
+                          }))
+                        );
+                        // Debounce the API call
+                        debouncedUpdatePhaseItem(item.id, phase.name, { ...item, goal: newValue });
+                      }}
                       style={{ width: "100%", padding: 4 }}
                     />
                   </td>
@@ -337,9 +371,18 @@ function App() {
                     <input
                       type="text"
                       value={item.need}
-                      onChange={(e) =>
-                        updatePhaseItem(item.id, phase.name, { ...item, need: e.target.value })
-                      }
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        setPhases(prevPhases => 
+                          prevPhases.map(p => ({
+                            ...p,
+                            items: p.items.map(i => 
+                              i.id === item.id ? { ...i, need: newValue } : i
+                            )
+                          }))
+                        );
+                        debouncedUpdatePhaseItem(item.id, phase.name, { ...item, need: newValue });
+                      }}
                       style={{ width: "100%", padding: 4 }}
                     />
                   </td>
@@ -347,18 +390,36 @@ function App() {
                     <input
                       type="text"
                       value={item.comments}
-                      onChange={(e) =>
-                        updatePhaseItem(item.id, phase.name, { ...item, comments: e.target.value })
-                      }
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        setPhases(prevPhases => 
+                          prevPhases.map(p => ({
+                            ...p,
+                            items: p.items.map(i => 
+                              i.id === item.id ? { ...i, comments: newValue } : i
+                            )
+                          }))
+                        );
+                        debouncedUpdatePhaseItem(item.id, phase.name, { ...item, comments: newValue });
+                      }}
                       style={{ width: "100%", padding: 4 }}
                     />
                   </td>
                   <td style={{ border: "1px solid #ccc", padding: 8 }}>
                     <select
                       value={item.execute}
-                      onChange={(e) =>
-                        updatePhaseItem(item.id, phase.name, { ...item, execute: e.target.value })
-                      }
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        setPhases(prevPhases => 
+                          prevPhases.map(p => ({
+                            ...p,
+                            items: p.items.map(i => 
+                              i.id === item.id ? { ...i, execute: newValue } : i
+                            )
+                          }))
+                        );
+                        updatePhaseItem(item.id, phase.name, { ...item, execute: newValue });
+                      }}
                       style={{ width: "100%", padding: 4 }}
                     >
                       <option value="Y">Y</option>
@@ -368,9 +429,18 @@ function App() {
                   <td style={{ border: "1px solid #ccc", padding: 8 }}>
                     <select
                       value={item.stage}
-                      onChange={(e) =>
-                        updatePhaseItem(item.id, phase.name, { ...item, stage: e.target.value })
-                      }
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        setPhases(prevPhases => 
+                          prevPhases.map(p => ({
+                            ...p,
+                            items: p.items.map(i => 
+                              i.id === item.id ? { ...i, stage: newValue } : i
+                            )
+                          }))
+                        );
+                        updatePhaseItem(item.id, phase.name, { ...item, stage: newValue });
+                      }}
                       style={{ width: "100%", padding: 4 }}
                     >
                       <option value="review">Review</option>
@@ -383,16 +453,36 @@ function App() {
                   <td style={{ border: "1px solid #ccc", padding: 8 }}>
                     <textarea
                       value={item.commentArea}
-                      onChange={(e) =>
-                        updatePhaseItem(item.id, phase.name, { ...item, commentArea: e.target.value })
-                      }
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        setPhases(prevPhases => 
+                          prevPhases.map(p => ({
+                            ...p,
+                            items: p.items.map(i => 
+                              i.id === item.id ? { ...i, commentArea: newValue } : i
+                            )
+                          }))
+                        );
+                        debouncedUpdatePhaseItem(item.id, phase.name, { ...item, commentArea: newValue });
+                      }}
                       style={{ width: "100%", padding: 4 }}
                     />
                   </td>
                   <td style={{ border: "1px solid #ccc", padding: 8 }}>
                     <select
                       value={item.assigned_to || "team"}
-                      onChange={(e) => updatePhaseItem(item.id, phase.name, { ...item, assigned_to: e.target.value })}
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        setPhases(prevPhases => 
+                          prevPhases.map(p => ({
+                            ...p,
+                            items: p.items.map(i => 
+                              i.id === item.id ? { ...i, assigned_to: newValue } : i
+                            )
+                          }))
+                        );
+                        updatePhaseItem(item.id, phase.name, { ...item, assigned_to: newValue });
+                      }}
                       style={{ width: "100%", padding: 4 }}
                     >
                       <option value="team">team</option>
