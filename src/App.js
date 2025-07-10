@@ -352,12 +352,34 @@ function App() {
         )}
 
         {/* Canvas Container with Sticky Notes */}
-        <div style={{ position: "relative", display: "inline-block" }}>
+        <div 
+          style={{ position: "relative", display: "inline-block" }}
+          onDragOver={(e) => {
+            if (!isDrawingMode) {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "move";
+            }
+          }}
+          onDrop={(e) => {
+            if (!isDrawingMode) {
+              e.preventDefault();
+              const noteId = parseInt(e.dataTransfer.getData("text/plain"));
+              const rect = e.currentTarget.getBoundingClientRect();
+              const newX = e.clientX - rect.left;
+              const newY = e.clientY - rect.top;
+              moveStickyNote(noteId, newX, newY);
+            }
+          }}
+        >
           <canvas
             ref={canvasRef}
             width={800}
             height={400}
-            style={{ border: "1px solid #ccc", display: "block" }}
+            style={{ 
+              border: "1px solid #ccc", 
+              display: "block",
+              pointerEvents: "auto" // Ensure canvas always receives pointer events
+            }}
           />
           
           {/* Sticky Notes Overlay */}
@@ -371,24 +393,29 @@ function App() {
                 backgroundColor: note.color,
                 padding: "12px",
                 borderRadius: "4px",
-                boxShadow: "2px 2px 8px rgba(0,0,0,0.2)",
+                boxShadow: isDrawingMode ? "1px 1px 4px rgba(0,0,0,0.1)" : "2px 2px 8px rgba(0,0,0,0.2)",
                 minWidth: "120px",
                 maxWidth: "200px",
                 cursor: isDrawingMode ? "default" : "move",
                 fontSize: "12px",
                 fontFamily: "Arial, sans-serif",
                 wordWrap: "break-word",
-                pointerEvents: isDrawingMode ? "none" : "auto" // Only interactive in Note Mode
+                pointerEvents: isDrawingMode ? "none" : "auto", // Only interactive in Note Mode
+                userSelect: "none", // Prevent text selection during drag
+                opacity: isDrawingMode ? 0.7 : 1, // Make notes slightly transparent in drawing mode
+                transition: "opacity 0.2s ease"
               }}
               draggable={!isDrawingMode}
               onDragStart={(e) => {
                 if (!isDrawingMode) {
-                  e.dataTransfer.setData("text/plain", note.id);
+                  e.dataTransfer.setData("text/plain", note.id.toString());
+                  e.dataTransfer.effectAllowed = "move";
                 }
               }}
               onDragOver={(e) => {
                 if (!isDrawingMode) {
                   e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
                 }
               }}
               onDrop={(e) => {
@@ -398,6 +425,11 @@ function App() {
                   const newX = e.clientX - rect.left;
                   const newY = e.clientY - rect.top;
                   moveStickyNote(note.id, newX, newY);
+                }
+              }}
+              onDragEnd={(e) => {
+                if (!isDrawingMode) {
+                  e.preventDefault();
                 }
               }}
             >
