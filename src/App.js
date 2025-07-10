@@ -8,8 +8,9 @@ function App() {
   const [stickyNoteText, setStickyNoteText] = useState("");
   const [stickyNotes, setStickyNotes] = useState([]);
   const [isDrawingMode, setIsDrawingMode] = useState(true);
+  const [draggedNote, setDraggedNote] = useState(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const canvasRef = useRef(null);
-  let isDrawing = false;
 
   const [newTask, setNewTask] = useState({
     phase: "Design",
@@ -186,9 +187,6 @@ function App() {
     setStickyNotes(prev => prev.filter(note => note.id !== id));
   };
 
-  const [draggedNote, setDraggedNote] = useState(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-
   const moveStickyNote = (id, newX, newY) => {
     setStickyNotes(prev => 
       prev.map(note => 
@@ -209,27 +207,7 @@ function App() {
     }
   };
 
-  const handleMouseMove = (e) => {
-    if (draggedNote && !isDrawingMode) {
-      const container = e.currentTarget;
-      const rect = container.getBoundingClientRect();
-      const newX = e.clientX - rect.left - dragOffset.x;
-      const newY = e.clientY - rect.top - dragOffset.y;
-      
-      // Keep note within bounds
-      const maxX = rect.width - 120; // minWidth of note
-      const maxY = rect.height - 50; // approximate height of note
-      const constrainedX = Math.max(0, Math.min(newX, maxX));
-      const constrainedY = Math.max(0, Math.min(newY, maxY));
-      
-      moveStickyNote(draggedNote.id, constrainedX, constrainedY);
-    }
-  };
 
-  const handleMouseUp = () => {
-    setDraggedNote(null);
-    setDragOffset({ x: 0, y: 0 });
-  };
 
   const addTeamMember = async () => {
     if (!username || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -273,24 +251,7 @@ function App() {
     }
   };
 
-  const addPhaseItem = async (phase) => {
-    const response = await fetch("https://whiteboard-backend-1cdi.onrender.com/api/phases", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        phase,
-        goal: "",
-        need: "",
-        comments: "",
-        execute: "N",
-        stage: "review",
-        commentArea: "",
-      }),
-    });
-    if (response.ok) {
-      fetchPhases();
-    }
-  };
+
 
   const handleNewTaskChange = (e) => {
     const { name, value } = e.target;
@@ -452,7 +413,6 @@ function App() {
                 backgroundColor: note.color,
                 padding: "12px",
                 borderRadius: "4px",
-                boxShadow: isDrawingMode ? "1px 1px 4px rgba(0,0,0,0.1)" : "2px 2px 8px rgba(0,0,0,0.2)",
                 minWidth: "120px",
                 maxWidth: "200px",
                 cursor: isDrawingMode ? "default" : "move",
