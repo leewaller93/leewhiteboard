@@ -5,6 +5,8 @@ function App() {
   const [team, setTeam] = useState([]);
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
+  const [stickyNoteText, setStickyNoteText] = useState("");
+  const [stickyNotes, setStickyNotes] = useState([]);
   const canvasRef = useRef(null);
   let isDrawing = false;
 
@@ -126,6 +128,32 @@ function App() {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+  };
+
+  const addStickyNote = () => {
+    if (stickyNoteText.trim()) {
+      const newNote = {
+        id: Date.now(),
+        text: stickyNoteText,
+        x: Math.random() * 600 + 50, // Random position on canvas
+        y: Math.random() * 300 + 50,
+        color: ['#ffeb3b', '#ff9800', '#4caf50', '#2196f3', '#e91e63'][Math.floor(Math.random() * 5)] // Random color
+      };
+      setStickyNotes(prev => [...prev, newNote]);
+      setStickyNoteText("");
+    }
+  };
+
+  const deleteStickyNote = (id) => {
+    setStickyNotes(prev => prev.filter(note => note.id !== id));
+  };
+
+  const moveStickyNote = (id, newX, newY) => {
+    setStickyNotes(prev => 
+      prev.map(note => 
+        note.id === id ? { ...note, x: newX, y: newY } : note
+      )
+    );
   };
 
   const addTeamMember = async () => {
@@ -253,25 +281,134 @@ function App() {
 
       <div style={{ marginBottom: 24 }}>
         <h2 style={{ fontSize: 20, fontWeight: "bold", marginBottom: 8 }}>Whiteboard</h2>
-        <canvas
-          ref={canvasRef}
-          width={800}
-          height={400}
-          style={{ border: "1px solid #ccc", marginBottom: 8, display: "block" }}
-        ></canvas>
-        <button
-          onClick={clearCanvas}
-          style={{
-            background: "#ef4444",
-            color: "white",
-            padding: "8px 16px",
-            borderRadius: 4,
-            border: "none",
-            cursor: "pointer",
-          }}
-        >
-          Clear Whiteboard
-        </button>
+        
+        {/* Sticky Note Input */}
+        <div style={{ marginBottom: 16, display: "flex", gap: 8, alignItems: "center" }}>
+          <input
+            type="text"
+            value={stickyNoteText}
+            onChange={(e) => setStickyNoteText(e.target.value)}
+            placeholder="Type your sticky note here..."
+            style={{ 
+              flex: 1, 
+              padding: "8px 12px", 
+              borderRadius: 4, 
+              border: "1px solid #ccc",
+              fontSize: "14px"
+            }}
+            onKeyPress={(e) => e.key === 'Enter' && addStickyNote()}
+          />
+          <button
+            onClick={addStickyNote}
+            style={{
+              background: "#22c55e",
+              color: "white",
+              padding: "8px 16px",
+              borderRadius: 4,
+              border: "none",
+              cursor: "pointer",
+              fontSize: "14px"
+            }}
+          >
+            Add Note
+          </button>
+        </div>
+
+        {/* Canvas Container with Sticky Notes */}
+        <div style={{ position: "relative", display: "inline-block" }}>
+          <canvas
+            ref={canvasRef}
+            width={800}
+            height={400}
+            style={{ border: "1px solid #ccc", display: "block" }}
+          />
+          
+          {/* Sticky Notes Overlay */}
+          {stickyNotes.map((note) => (
+            <div
+              key={note.id}
+              style={{
+                position: "absolute",
+                left: note.x,
+                top: note.y,
+                backgroundColor: note.color,
+                padding: "12px",
+                borderRadius: "4px",
+                boxShadow: "2px 2px 8px rgba(0,0,0,0.2)",
+                minWidth: "120px",
+                maxWidth: "200px",
+                cursor: "move",
+                fontSize: "12px",
+                fontFamily: "Arial, sans-serif",
+                wordWrap: "break-word"
+              }}
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData("text/plain", note.id);
+              }}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                const rect = e.currentTarget.parentElement.getBoundingClientRect();
+                const newX = e.clientX - rect.left;
+                const newY = e.clientY - rect.top;
+                moveStickyNote(note.id, newX, newY);
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "4px" }}>
+                <div style={{ flex: 1, marginRight: "8px" }}>{note.text}</div>
+                <button
+                  onClick={() => deleteStickyNote(note.id)}
+                  style={{
+                    background: "rgba(255,255,255,0.7)",
+                    border: "none",
+                    borderRadius: "50%",
+                    width: "16px",
+                    height: "16px",
+                    cursor: "pointer",
+                    fontSize: "10px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
+                  }}
+                  title="Delete note"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        <div style={{ marginTop: 8 }}>
+          <button
+            onClick={clearCanvas}
+            style={{
+              background: "#ef4444",
+              color: "white",
+              padding: "8px 16px",
+              borderRadius: 4,
+              border: "none",
+              cursor: "pointer",
+              marginRight: 8
+            }}
+          >
+            Clear Whiteboard
+          </button>
+          <button
+            onClick={() => setStickyNotes([])}
+            style={{
+              background: "#f59e0b",
+              color: "white",
+              padding: "8px 16px",
+              borderRadius: 4,
+              border: "none",
+              cursor: "pointer"
+            }}
+          >
+            Clear All Notes
+          </button>
+        </div>
       </div>
 
       {/* Add Task Form */}
