@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/leewhiteboard/static/css/main.e6c13ad2.css",
-    "main.js": "/leewhiteboard/static/js/main.a516ca4f.js",
+    "main.js": "/leewhiteboard/static/js/main.b1f343be.js",
     "static/js/453.a4742f95.chunk.js": "/leewhiteboard/static/js/453.a4742f95.chunk.js",
     "index.html": "/leewhiteboard/index.html",
     "main.e6c13ad2.css.map": "/leewhiteboard/static/css/main.e6c13ad2.css.map",
-    "main.a516ca4f.js.map": "/leewhiteboard/static/js/main.a516ca4f.js.map",
+    "main.b1f343be.js.map": "/leewhiteboard/static/js/main.b1f343be.js.map",
     "453.a4742f95.chunk.js.map": "/leewhiteboard/static/js/453.a4742f95.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.e6c13ad2.css",
-    "static/js/main.a516ca4f.js"
+    "static/js/main.b1f343be.js"
   ]
 }
