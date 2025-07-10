@@ -221,6 +221,30 @@ function App() {
     }
   };
 
+  const deletePhaseItem = async (id) => {
+    if (window.confirm("Are you sure you want to delete this task?")) {
+      try {
+        const response = await fetch(`https://whiteboard-backend-1cdi.onrender.com/api/phases/${id}`, {
+          method: "DELETE",
+        });
+        if (response.ok) {
+          // Remove from local state immediately
+          setPhases(prevPhases => 
+            prevPhases.map(p => ({
+              ...p,
+              items: p.items.filter(item => item.id !== id)
+            }))
+          );
+        } else {
+          alert("Failed to delete task");
+        }
+      } catch (error) {
+        console.error('Error deleting item:', error);
+        alert("Failed to delete task");
+      }
+    }
+  };
+
   return (
     <div style={{ padding: 16, maxWidth: 1200, margin: "0 auto" }}>
       <h1 style={{ fontSize: 24, fontWeight: "bold", marginBottom: 16 }}>
@@ -341,6 +365,7 @@ function App() {
                 <th style={{ border: "1px solid #ccc", padding: 8 }}>Stage</th>
                 <th style={{ border: "1px solid #ccc", padding: 8 }}>Comment Area</th>
                 <th style={{ border: "1px solid #ccc", padding: 8 }}>Assigned To</th>
+                <th style={{ border: "1px solid #ccc", padding: 8 }}>Delete</th>
               </tr>
             </thead>
             <tbody>
@@ -490,6 +515,23 @@ function App() {
                         <option key={member.id} value={member.username}>{member.username}</option>
                       ))}
                     </select>
+                  </td>
+                  <td style={{ border: "1px solid #ccc", padding: 8, textAlign: "center" }}>
+                    <button
+                      onClick={() => deletePhaseItem(item.id)}
+                      style={{
+                        background: "#ef4444",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        padding: "4px 8px",
+                        cursor: "pointer",
+                        fontSize: "12px"
+                      }}
+                      title="Delete this task"
+                    >
+                      🗑️
+                    </button>
                   </td>
                 </tr>
               ))}
