@@ -149,12 +149,40 @@ function App() {
     setStickyNotes(prev => prev.filter(note => note.id !== id));
   };
 
+  const [draggedNote, setDraggedNote] = useState(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+
   const moveStickyNote = (id, newX, newY) => {
     setStickyNotes(prev => 
       prev.map(note => 
         note.id === id ? { ...note, x: newX, y: newY } : note
       )
     );
+  };
+
+  const handleMouseDown = (e, note) => {
+    if (!isDrawingMode) {
+      const rect = e.currentTarget.parentElement.getBoundingClientRect();
+      const offsetX = e.clientX - rect.left - note.x;
+      const offsetY = e.clientY - rect.top - note.y;
+      setDraggedNote(note);
+      setDragOffset({ x: offsetX, y: offsetY });
+      e.preventDefault();
+    }
+  };
+
+  const handleMouseMove = (e) => {
+    if (draggedNote && !isDrawingMode) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const newX = e.clientX - rect.left - dragOffset.x;
+      const newY = e.clientY - rect.top - dragOffset.y;
+      moveStickyNote(draggedNote.id, newX, newY);
+    }
+  };
+
+  const handleMouseUp = () => {
+    setDraggedNote(null);
+    setDragOffset({ x: 0, y: 0 });
   };
 
   const addTeamMember = async () => {
@@ -354,22 +382,9 @@ function App() {
         {/* Canvas Container with Sticky Notes */}
         <div 
           style={{ position: "relative", display: "inline-block" }}
-          onDragOver={(e) => {
-            if (!isDrawingMode) {
-              e.preventDefault();
-              e.dataTransfer.dropEffect = "move";
-            }
-          }}
-          onDrop={(e) => {
-            if (!isDrawingMode) {
-              e.preventDefault();
-              const noteId = parseInt(e.dataTransfer.getData("text/plain"));
-              const rect = e.currentTarget.getBoundingClientRect();
-              const newX = e.clientX - rect.left;
-              const newY = e.clientY - rect.top;
-              moveStickyNote(noteId, newX, newY);
-            }
-          }}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
         >
           <canvas
             ref={canvasRef}
@@ -403,35 +418,10 @@ function App() {
                 pointerEvents: isDrawingMode ? "none" : "auto", // Only interactive in Note Mode
                 userSelect: "none", // Prevent text selection during drag
                 opacity: isDrawingMode ? 0.7 : 1, // Make notes slightly transparent in drawing mode
-                transition: "opacity 0.2s ease"
+                transition: "opacity 0.2s ease",
+                zIndex: draggedNote?.id === note.id ? 1000 : 1 // Bring dragged note to front
               }}
-              draggable={!isDrawingMode}
-              onDragStart={(e) => {
-                if (!isDrawingMode) {
-                  e.dataTransfer.setData("text/plain", note.id.toString());
-                  e.dataTransfer.effectAllowed = "move";
-                }
-              }}
-              onDragOver={(e) => {
-                if (!isDrawingMode) {
-                  e.preventDefault();
-                  e.dataTransfer.dropEffect = "move";
-                }
-              }}
-              onDrop={(e) => {
-                if (!isDrawingMode) {
-                  e.preventDefault();
-                  const rect = e.currentTarget.parentElement.getBoundingClientRect();
-                  const newX = e.clientX - rect.left;
-                  const newY = e.clientY - rect.top;
-                  moveStickyNote(note.id, newX, newY);
-                }
-              }}
-              onDragEnd={(e) => {
-                if (!isDrawingMode) {
-                  e.preventDefault();
-                }
-              }}
+              onMouseDown={(e) => handleMouseDown(e, note)}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "4px" }}>
                 <div style={{ flex: 1, marginRight: "8px" }}>{note.text}</div>
