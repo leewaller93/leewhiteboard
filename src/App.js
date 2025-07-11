@@ -629,6 +629,7 @@ function App() {
       <div style={{ marginBottom: 24, padding: 16, border: "1px solid #ccc", borderRadius: 8 }}>
         <h2 style={{ fontSize: 20, fontWeight: "bold", marginBottom: 8 }}>Add New Task/Goal</h2>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {/* Stage Dropdown - now first field */}
           <select name="phase" value={newTask.phase} onChange={handleNewTaskChange} style={{ padding: 8, borderRadius: 4, border: "1px solid #ccc" }}>
             <option value="Design">Design</option>
             <option value="Development">Development</option>
@@ -642,11 +643,13 @@ function App() {
             <option value="Y">Y</option>
             <option value="N">N</option>
           </select>
+          {/* Status Dropdown - now sixth field */}
           <select name="stage" value={newTask.stage} onChange={handleNewTaskChange} style={{ padding: 8, borderRadius: 4, border: "1px solid #ccc" }}>
-            <option value="Design">Design</option>
-            <option value="Dev">Dev</option>
-            <option value="Alpha">Alpha</option>
-            <option value="Beta">Beta</option>
+            <option value="In Dev">In Dev</option>
+            <option value="Feedback">Feedback</option>
+            <option value="Testing">Testing</option>
+            <option value="Complete">Complete</option>
+            <option value="Released">Released</option>
           </select>
           <select name="assigned_to" value={newTask.assigned_to} onChange={handleNewTaskChange} style={{ padding: 8, borderRadius: 4, border: "1px solid #ccc", flex: 1 }}>
             <option value="team">team</option>
