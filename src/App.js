@@ -14,6 +14,7 @@ function App() {
   const canvasRef = useRef(null);
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [noteSizes, setNoteSizes] = useState({});
+  const [title, setTitle] = useState("Development Strategy Whiteboard");
 
   const [newTask, setNewTask] = useState({
     phase: "Design",
@@ -42,13 +43,12 @@ function App() {
     fetchPhases();
     fetchTeam();
     // Fetch and restore whiteboard state
-    fetch('https://whiteboard-backend-1cdi.onrender.com/api/whiteboard/latest')
+    fetch('https://whiteboard-backend-1cdi.onrender.com/api/whiteboard')
       .then(res => res.json())
       .then(data => {
         if (data) {
-          // Restore sticky notes
+          if (data.title) setTitle(data.title);
           if (data.stickyNotes) setStickyNotes(data.stickyNotes);
-          // Restore canvas image
           if (data.canvasImage && canvasRef.current) {
             const img = new window.Image();
             img.onload = () => {
@@ -243,22 +243,17 @@ function App() {
   };
 
   const handleSave = async () => {
-    // 1. Show the new alert message
     alert('Saved --get back to it!');
-
-    // 2. Capture canvas as image
     const canvas = canvasRef.current;
     const canvasImage = canvas.toDataURL('image/png');
-
-    // 3. Gather sticky notes data
     const notesData = stickyNotes;
-
-    // 4. POST to backend (assume endpoint exists)
+    // Save title, sticky notes, and canvas image
     try {
-      await fetch('https://whiteboard-backend-1cdi.onrender.com/api/whiteboard/save', {
+      await fetch('https://whiteboard-backend-1cdi.onrender.com/api/whiteboard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          title,
           canvasImage,
           stickyNotes: notesData
         })
@@ -392,6 +387,24 @@ function App() {
       >
         Save
       </button>
+      <input
+        type="text"
+        value={title}
+        onChange={e => setTitle(e.target.value)}
+        style={{
+          fontSize: 24,
+          fontWeight: "bold",
+          marginBottom: 16,
+          width: "100%",
+          textAlign: "center",
+          border: "none",
+          outline: "none",
+          background: "#f3f4f6",
+          borderRadius: 8,
+          padding: 8
+        }}
+        placeholder="Enter whiteboard title..."
+      />
       <h1 style={{ fontSize: 24, fontWeight: "bold", marginBottom: 16 }}>
         Development Strategy Whiteboard
       </h1>
