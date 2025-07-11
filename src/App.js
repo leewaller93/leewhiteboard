@@ -8,9 +8,12 @@ function App() {
   const [stickyNoteText, setStickyNoteText] = useState("");
   const [stickyNotes, setStickyNotes] = useState([]);
   const [isDrawingMode, setIsDrawingMode] = useState(true);
+  const isDrawingRef = useRef(false); // <-- add this line
   const [draggedNote, setDraggedNote] = useState(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const canvasRef = useRef(null);
+  const [editingNoteId, setEditingNoteId] = useState(null);
+  const [noteSizes, setNoteSizes] = useState({});
 
   const [newTask, setNewTask] = useState({
     phase: "Design",
@@ -123,20 +126,19 @@ function App() {
     ctx.lineCap = "round";
     ctx.strokeStyle = "black";
 
-    let isDrawing = false;
+    let lastPos = null;
 
     const getOffset = (e) => {
-      // Support both mouse and touch events
+      const rect = canvas.getBoundingClientRect();
       if (e.touches && e.touches.length > 0) {
-        const rect = canvas.getBoundingClientRect();
         return {
           offsetX: e.touches[0].clientX - rect.left,
           offsetY: e.touches[0].clientY - rect.top,
         };
-      } else if (e.nativeEvent) {
+      } else if (typeof e.clientX === 'number' && typeof e.clientY === 'number') {
         return {
-          offsetX: e.nativeEvent.offsetX,
-          offsetY: e.nativeEvent.offsetY,
+          offsetX: e.clientX - rect.left,
+          offsetY: e.clientY - rect.top,
         };
       } else {
         return { offsetX: 0, offsetY: 0 };
@@ -144,25 +146,35 @@ function App() {
     };
 
     const startDrawing = (e) => {
-      e.preventDefault(); // Prevent default touch behavior
-      isDrawing = true;
+      if (!isDrawingMode) return; // Only allow drawing in Drawing Mode
+      if ((e.type === 'mousedown' && e.button !== 0)) return;
+      e.preventDefault();
+      isDrawingRef.current = true;
       const { offsetX, offsetY } = getOffset(e);
       ctx.beginPath();
       ctx.moveTo(offsetX, offsetY);
+      lastPos = { offsetX, offsetY };
+      console.log('Start drawing', offsetX, offsetY, e.type, e.button);
     };
 
     const draw = (e) => {
-      if (!isDrawing) return;
-      e.preventDefault(); // Prevent default touch behavior
+      if (!isDrawingRef.current) return;
+      e.preventDefault();
       const { offsetX, offsetY } = getOffset(e);
       ctx.lineTo(offsetX, offsetY);
       ctx.stroke();
+      lastPos = { offsetX, offsetY };
+      console.log('Drawing', offsetX, offsetY, e.type);
     };
 
     const stopDrawing = (e) => {
-      if (e) e.preventDefault(); // Prevent default touch behavior
-      isDrawing = false;
-      ctx.closePath();
+      if (isDrawingRef.current) {
+        e && e.preventDefault();
+        isDrawingRef.current = false;
+        ctx.closePath();
+        lastPos = null;
+        console.log('Stop drawing', e && e.type);
+      }
     };
 
     canvas.addEventListener("mousedown", startDrawing);
@@ -184,7 +196,7 @@ function App() {
       canvas.removeEventListener("touchend", stopDrawing);
       canvas.removeEventListener("touchcancel", stopDrawing);
     };
-  }, []);
+  }, [isDrawingMode]);
 
   const clearCanvas = () => {
     const canvas = canvasRef.current;
@@ -470,66 +482,115 @@ function App() {
             width={800}
             height={400}
             style={{ 
-              border: "1px solid #ccc", 
+              border: "4px solid red", // Thicker border for visibility
+              background: "#fffbe6", // Light background for contrast
               display: "block",
               pointerEvents: "auto", // Ensure canvas always receives pointer events
               touchAction: "none", // Prevent touch scrolling/panning
-              userSelect: "none" // Prevent text selection
+              userSelect: "none", // Prevent text selection
+              zIndex: 1000 // Force canvas to top
             }}
           />
           
           {/* Sticky Notes Overlay */}
-          {stickyNotes.map((note) => (
-            <div
-              key={note.id}
-              style={{
-                position: "absolute",
-                left: note.x,
-                top: note.y,
-                backgroundColor: note.color,
-                padding: "12px",
-                borderRadius: "4px",
-                minWidth: "120px",
-                maxWidth: "200px",
-                cursor: isDrawingMode ? "default" : "move",
-                fontSize: "12px",
-                fontFamily: "Arial, sans-serif",
-                wordWrap: "break-word",
-                pointerEvents: isDrawingMode ? "none" : "auto", // Only interactive in Note Mode
-                userSelect: "none", // Prevent text selection during drag
-                opacity: isDrawingMode ? 0.7 : 1, // Make notes slightly transparent in drawing mode
-                transition: draggedNote?.id === note.id ? "none" : "opacity 0.2s ease", // No transition while dragging
-                zIndex: draggedNote?.id === note.id ? 1000 : 1, // Bring dragged note to front
-                transform: draggedNote?.id === note.id ? "scale(1.05)" : "scale(1)", // Slight scale when dragging
-                boxShadow: draggedNote?.id === note.id ? "4px 4px 12px rgba(0,0,0,0.3)" : (isDrawingMode ? "1px 1px 4px rgba(0,0,0,0.1)" : "2px 2px 8px rgba(0,0,0,0.2)")
-              }}
-              onMouseDown={(e) => handleMouseDown(e, note)}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "4px" }}>
-                <div style={{ flex: 1, marginRight: "8px" }}>{note.text}</div>
+          {stickyNotes.map((note) => {
+            const isEditing = editingNoteId === note.id;
+            const size = noteSizes[note.id] || { width: 120, height: 50 };
+            return (
+              <div
+                key={note.id}
+                style={{
+                  position: "absolute",
+                  left: note.x,
+                  top: note.y,
+                  backgroundColor: note.color,
+                  padding: "12px",
+                  borderRadius: "4px",
+                  minWidth: "60px",
+                  minHeight: "30px",
+                  width: size.width,
+                  height: size.height,
+                  maxWidth: "300px",
+                  maxHeight: "300px",
+                  cursor: isDrawingMode ? "default" : "move",
+                  fontSize: "12px",
+                  fontFamily: "Arial, sans-serif",
+                  wordWrap: "break-word",
+                  pointerEvents: isDrawingMode ? "none" : "auto",
+                  userSelect: "none",
+                  opacity: isDrawingMode ? 0.7 : 1,
+                  transition: draggedNote?.id === note.id ? "none" : "opacity 0.2s ease",
+                  zIndex: draggedNote?.id === note.id ? 1000 : 1,
+                  transform: draggedNote?.id === note.id ? "scale(1.05)" : "scale(1)",
+                  boxShadow: draggedNote?.id === note.id ? "4px 4px 12px rgba(0,0,0,0.3)" : (isDrawingMode ? "1px 1px 4px rgba(0,0,0,0.1)" : "2px 2px 8px rgba(0,0,0,0.2)")
+                }}
+                onMouseDown={(e) => handleMouseDown(e, note)}
+                // Removed onDoubleClick and onClick for editing
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "4px" }}>
+                  <div style={{ flex: 1, marginRight: "8px" }}>
+                    {/* Only display the note text, no editing */}
+                    <span style={{ display: "block", minHeight: 20 }}>{note.text}</span>
+                  </div>
+                  {!isDrawingMode && (
+                    <button
+                      onClick={() => deleteStickyNote(note.id)}
+                      style={{
+                        background: "rgba(255,255,255,0.7)",
+                        border: "none",
+                        borderRadius: "50%",
+                        width: "16px",
+                        height: "16px",
+                        cursor: "pointer",
+                        fontSize: "10px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
+                      }}
+                      title="Delete note"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+                {/* Resize handle */}
                 {!isDrawingMode && (
-                  <button
-                    onClick={() => deleteStickyNote(note.id)}
+                  <div
                     style={{
-                      background: "rgba(255,255,255,0.7)",
-                      border: "none",
-                      borderRadius: "50%",
-                      width: "16px",
-                      height: "16px",
-                      cursor: "pointer",
-                      fontSize: "10px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center"
+                      position: "absolute",
+                      right: 2,
+                      bottom: 2,
+                      width: 12,
+                      height: 12,
+                      background: "#ccc",
+                      borderRadius: 2,
+                      cursor: "nwse-resize",
+                      zIndex: 10
                     }}
-                    title="Delete note"
-                  >
-                    ×
-                  </button>
+                    onMouseDown={e => {
+                      console.log('Resize handle mousedown', note.id);
+                      e.stopPropagation();
+                      const startX = e.clientX;
+                      const startY = e.clientY;
+                      const startWidth = size.width;
+                      const startHeight = size.height;
+                      const onMove = moveEvent => {
+                        const newWidth = Math.max(60, Math.min(300, startWidth + (moveEvent.clientX - startX)));
+                        const newHeight = Math.max(30, Math.min(300, startHeight + (moveEvent.clientY - startY)));
+                        setNoteSizes(sizes => ({ ...sizes, [note.id]: { width: newWidth, height: newHeight } }));
+                      };
+                      const onUp = () => {
+                        window.removeEventListener('mousemove', onMove);
+                        window.removeEventListener('mouseup', onUp);
+                      };
+                      window.addEventListener('mousemove', onMove);
+                      window.addEventListener('mouseup', onUp);
+                    }}
+                  />
                 )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         
         <div style={{ marginTop: 8 }}>
@@ -651,7 +712,7 @@ function App() {
                 <th style={{ border: "1px solid #ccc", padding: 8 }}>Need</th>
                 <th style={{ border: "1px solid #ccc", padding: 8 }}>Comments</th>
                 <th style={{ border: "1px solid #ccc", padding: 8 }}>Execute</th>
-                <th style={{ border: "1px solid #ccc", padding: 8 }}>Stage</th>
+                <th style={{ border: "1px solid #ccc", padding: 8 }}>Status</th>
                 <th style={{ border: "1px solid #ccc", padding: 8 }}>Comment Area</th>
                 <th style={{ border: "1px solid #ccc", padding: 8 }}>Assigned To</th>
                 <th style={{ border: "1px solid #ccc", padding: 8 }}>Delete</th>
@@ -742,25 +803,25 @@ function App() {
                   </td>
                   <td style={{ border: "1px solid #ccc", padding: 8 }}>
                     <select
-                      value={item.stage}
+                      value={item.status || "In Dev"}
                       onChange={(e) => {
                         const newValue = e.target.value;
                         setPhases(prevPhases => 
                           prevPhases.map(p => ({
                             ...p,
                             items: p.items.map(i => 
-                              i.id === item.id ? { ...i, stage: newValue } : i
+                              i.id === item.id ? { ...i, status: newValue } : i
                             )
                           }))
                         );
-                        updatePhaseItem(item.id, phase.name, { ...item, stage: newValue });
+                        updatePhaseItem(item.id, phase.name, { ...item, status: newValue });
                       }}
                       style={{ width: "100%", padding: 4 }}
                     >
-                      <option value="Design">Design</option>
-                      <option value="Dev">Dev</option>
-                      <option value="Alpha">Alpha</option>
-                      <option value="Beta">Beta</option>
+                      <option value="In Dev">In Dev</option>
+                      <option value="Testing">Testing</option>
+                      <option value="Feedback">Feedback</option>
+                      <option value="Complete">Complete</option>
                     </select>
                   </td>
                   <td style={{ border: "1px solid #ccc", padding: 8 }}>
@@ -814,12 +875,14 @@ function App() {
                         borderRadius: "4px",
                         padding: "4px 8px",
                         cursor: "pointer",
-                        fontSize: "12px"
+                        fontSize: "12px",
+                        marginRight: "4px"
                       }}
                       title="Delete this task"
                     >
                       🗑️
                     </button>
+                    <StageDropdown item={item} phase={phase} updatePhaseItem={updatePhaseItem} setPhases={setPhases} />
                   </td>
                 </tr>
               ))}
@@ -832,3 +895,52 @@ function App() {
 }
 
 export default App;
+
+function StageDropdown({ item, phase, updatePhaseItem, setPhases }) {
+  const [show, setShow] = React.useState(false);
+  return (
+    <span style={{ position: "relative" }}>
+      <button
+        onClick={() => setShow((s) => !s)}
+        style={{
+          background: "#3b82f6",
+          color: "white",
+          border: "none",
+          borderRadius: "4px",
+          padding: "4px 8px",
+          cursor: "pointer",
+          fontSize: "12px"
+        }}
+        title="Change Stage"
+      >
+        Change Stage
+      </button>
+      {show && (
+        <select
+          value={item.stage}
+          onChange={(e) => {
+            const newValue = e.target.value;
+            setPhases(prevPhases => 
+              prevPhases.map(p => ({
+                ...p,
+                items: p.items.filter(i => i.id !== item.id)
+              })).map(p =>
+                p.name === newValue
+                  ? { ...p, items: [...p.items, { ...item, stage: newValue, phase: newValue }] }
+                  : p
+              )
+            );
+            updatePhaseItem(item.id, newValue, { ...item, stage: newValue, phase: newValue });
+            setShow(false);
+          }}
+          style={{ position: "absolute", left: 0, top: "100%", zIndex: 10 }}
+        >
+          <option value="Design">Design</option>
+          <option value="Dev">Dev</option>
+          <option value="Alpha">Alpha</option>
+          <option value="Beta">Beta</option>
+        </select>
+      )}
+    </span>
+  );
+}
