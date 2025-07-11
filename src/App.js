@@ -38,6 +38,26 @@ function App() {
   useEffect(() => {
     fetchPhases();
     fetchTeam();
+    // Fetch and restore whiteboard state
+    fetch('https://whiteboard-backend-1cdi.onrender.com/api/whiteboard/latest')
+      .then(res => res.json())
+      .then(data => {
+        if (data) {
+          // Restore sticky notes
+          if (data.stickyNotes) setStickyNotes(data.stickyNotes);
+          // Restore canvas image
+          if (data.canvasImage && canvasRef.current) {
+            const img = new window.Image();
+            img.onload = () => {
+              const ctx = canvasRef.current.getContext('2d');
+              ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+              ctx.drawImage(img, 0, 0, canvasRef.current.width, canvasRef.current.height);
+            };
+            img.src = data.canvasImage;
+          }
+        }
+      })
+      .catch(err => console.error('Failed to load whiteboard state:', err));
     // eslint-disable-next-line
   }, []);
 
@@ -210,7 +230,31 @@ function App() {
     }
   };
 
+  const handleSave = async () => {
+    // 1. Show the new alert message
+    alert('Saved --get back to it!');
 
+    // 2. Capture canvas as image
+    const canvas = canvasRef.current;
+    const canvasImage = canvas.toDataURL('image/png');
+
+    // 3. Gather sticky notes data
+    const notesData = stickyNotes;
+
+    // 4. POST to backend (assume endpoint exists)
+    try {
+      await fetch('https://whiteboard-backend-1cdi.onrender.com/api/whiteboard/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          canvasImage,
+          stickyNotes: notesData
+        })
+      });
+    } catch (error) {
+      console.error('Failed to save whiteboard:', error);
+    }
+  };
 
   const addTeamMember = async () => {
     if (!username || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -314,7 +358,28 @@ function App() {
   };
 
   return (
-    <div style={{ padding: 16, maxWidth: 1200, margin: "0 auto" }}>
+    <div style={{ padding: 16, maxWidth: 1200, margin: "0 auto", position: "relative" }}>
+      {/* Save Button in Top Right Corner */}
+      <button
+        onClick={handleSave}
+        style={{
+          position: "absolute",
+          top: 16,
+          right: 16,
+          background: "#3b82f6",
+          color: "white",
+          padding: "12px 24px",
+          borderRadius: 8,
+          border: "none",
+          cursor: "pointer",
+          fontSize: "16px",
+          fontWeight: "bold",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+          zIndex: 2000
+        }}
+      >
+        Save
+      </button>
       <h1 style={{ fontSize: 24, fontWeight: "bold", marginBottom: 16 }}>
         Development Strategy Whiteboard
       </h1>
@@ -490,7 +555,8 @@ function App() {
               padding: "8px 16px",
               borderRadius: 4,
               border: "none",
-              cursor: "pointer"
+              cursor: "pointer",
+              marginRight: 8
             }}
           >
             Clear All Notes
@@ -516,11 +582,10 @@ function App() {
             <option value="N">N</option>
           </select>
           <select name="stage" value={newTask.stage} onChange={handleNewTaskChange} style={{ padding: 8, borderRadius: 4, border: "1px solid #ccc" }}>
-            <option value="review">Review</option>
-            <option value="in dev">In Dev</option>
-            <option value="testing">Testing</option>
-            <option value="complete">Complete</option>
-            <option value="released">Released</option>
+            <option value="Design">Design</option>
+            <option value="Dev">Dev</option>
+            <option value="Alpha">Alpha</option>
+            <option value="Beta">Beta</option>
           </select>
           <select name="assigned_to" value={newTask.assigned_to} onChange={handleNewTaskChange} style={{ padding: 8, borderRadius: 4, border: "1px solid #ccc", flex: 1 }}>
             <option value="team">team</option>
@@ -692,11 +757,10 @@ function App() {
                       }}
                       style={{ width: "100%", padding: 4 }}
                     >
-                      <option value="review">Review</option>
-                      <option value="in dev">In Dev</option>
-                      <option value="testing">Testing</option>
-                      <option value="complete">Complete</option>
-                      <option value="released">Released</option>
+                      <option value="Design">Design</option>
+                      <option value="Dev">Dev</option>
+                      <option value="Alpha">Alpha</option>
+                      <option value="Beta">Beta</option>
                     </select>
                   </td>
                   <td style={{ border: "1px solid #ccc", padding: 8 }}>
