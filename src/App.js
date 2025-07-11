@@ -405,9 +405,6 @@ function App() {
         }}
         placeholder="Enter whiteboard title..."
       />
-      <h1 style={{ fontSize: 24, fontWeight: "bold", marginBottom: 16 }}>
-        Development Strategy Whiteboard
-      </h1>
 
       <div style={{ marginBottom: 24 }}>
         <h2 style={{ fontSize: 20, fontWeight: "bold", marginBottom: 8 }}>Whiteboard</h2>
