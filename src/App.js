@@ -289,25 +289,33 @@ function App() {
   };
 
   const deletePhaseItem = async (id) => {
+    console.log('Attempting to delete task with id:', id);
     if (window.confirm("Are you sure you want to delete this task?")) {
       try {
         const response = await fetch(`https://whiteboard-backend-1cdi.onrender.com/api/phases/${id}`, {
           method: "DELETE",
         });
-        if (response.ok) {
-          // Remove from local state immediately
-          setPhases(prevPhases => 
-            prevPhases.map(p => ({
-              ...p,
-              items: p.items.filter(item => item.id !== id)
-            }))
-          );
-        } else {
-          alert("Failed to delete task");
+        console.log('Backend response status:', response.status);
+        // Remove from local state immediately
+        setPhases(prevPhases => 
+          prevPhases.map(p => ({
+            ...p,
+            items: p.items.filter(item => item.id !== id)
+          }))
+        );
+        if (!response.ok) {
+          alert("Failed to delete task from backend, but it was removed from the UI.");
         }
       } catch (error) {
         console.error('Error deleting item:', error);
-        alert("Failed to delete task");
+        // Remove from local state anyway
+        setPhases(prevPhases => 
+          prevPhases.map(p => ({
+            ...p,
+            items: p.items.filter(item => item.id !== id)
+          }))
+        );
+        alert("Failed to delete task from backend, but it was removed from the UI.");
       }
     }
   };
