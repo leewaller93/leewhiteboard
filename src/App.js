@@ -289,13 +289,15 @@ function App() {
   };
 
   const deletePhaseItem = async (id) => {
-    console.log('Attempting to delete task with id:', id);
+    const url = `https://whiteboard-backend-1cdi.onrender.com/api/phases/${id}`;
+    console.log('Attempting to delete task with id:', id, 'URL:', url);
     if (window.confirm("Are you sure you want to delete this task?")) {
       try {
-        const response = await fetch(`https://whiteboard-backend-1cdi.onrender.com/api/phases/${id}`, {
+        const response = await fetch(url, {
           method: "DELETE",
         });
-        console.log('Backend response status:', response.status);
+        const responseText = await response.text();
+        console.log('Backend response status:', response.status, 'Response text:', responseText);
         // Remove from local state immediately
         setPhases(prevPhases => 
           prevPhases.map(p => ({
@@ -303,9 +305,15 @@ function App() {
             items: p.items.filter(item => item.id !== id)
           }))
         );
-        if (!response.ok) {
-          alert("Failed to delete task from backend, but it was removed from the UI.");
-        }
+        // Refetch phases to verify backend deletion
+        setTimeout(async () => {
+          await fetchPhases();
+          // Check if the task still exists after refetch
+          const stillExists = phases.some(phase => phase.items.some(item => item.id === id));
+          if (stillExists || !response.ok) {
+            alert(`Failed to delete task from backend.\nStatus: ${response.status}\nResponse: ${responseText}`);
+          }
+        }, 500);
       } catch (error) {
         console.error('Error deleting item:', error);
         // Remove from local state anyway
