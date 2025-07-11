@@ -124,6 +124,7 @@ function App() {
     };
 
     const startDrawing = (e) => {
+      e.preventDefault(); // Prevent default touch behavior
       isDrawing = true;
       const { offsetX, offsetY } = getOffset(e);
       ctx.beginPath();
@@ -132,12 +133,14 @@ function App() {
 
     const draw = (e) => {
       if (!isDrawing) return;
+      e.preventDefault(); // Prevent default touch behavior
       const { offsetX, offsetY } = getOffset(e);
       ctx.lineTo(offsetX, offsetY);
       ctx.stroke();
     };
 
-    const stopDrawing = () => {
+    const stopDrawing = (e) => {
+      if (e) e.preventDefault(); // Prevent default touch behavior
       isDrawing = false;
       ctx.closePath();
     };
@@ -146,10 +149,10 @@ function App() {
     canvas.addEventListener("mousemove", draw);
     canvas.addEventListener("mouseup", stopDrawing);
     canvas.addEventListener("mouseout", stopDrawing);
-    canvas.addEventListener("touchstart", startDrawing);
-    canvas.addEventListener("touchmove", draw);
-    canvas.addEventListener("touchend", stopDrawing);
-    canvas.addEventListener("touchcancel", stopDrawing);
+    canvas.addEventListener("touchstart", startDrawing, { passive: false });
+    canvas.addEventListener("touchmove", draw, { passive: false });
+    canvas.addEventListener("touchend", stopDrawing, { passive: false });
+    canvas.addEventListener("touchcancel", stopDrawing, { passive: false });
 
     return () => {
       canvas.removeEventListener("mousedown", startDrawing);
@@ -389,7 +392,12 @@ function App() {
         {/* Canvas Container with Sticky Notes */}
         <div 
           className="canvas-container"
-          style={{ position: "relative", display: "inline-block" }}
+          style={{ 
+            position: "relative", 
+            display: "inline-block",
+            touchAction: "none", // Prevent touch scrolling/panning
+            userSelect: "none" // Prevent text selection
+          }}
         >
           <canvas
             ref={canvasRef}
@@ -398,7 +406,9 @@ function App() {
             style={{ 
               border: "1px solid #ccc", 
               display: "block",
-              pointerEvents: "auto" // Ensure canvas always receives pointer events
+              pointerEvents: "auto", // Ensure canvas always receives pointer events
+              touchAction: "none", // Prevent touch scrolling/panning
+              userSelect: "none" // Prevent text selection
             }}
           />
           
