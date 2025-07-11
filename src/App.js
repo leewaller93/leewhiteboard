@@ -647,7 +647,14 @@ function App() {
             <option value="Beta Release (Web)">Beta Release (Web)</option>
           </select>
           <input name="goal" value={newTask.goal} onChange={handleNewTaskChange} placeholder="Goal" style={{ padding: 8, borderRadius: 4, border: "1px solid #ccc", flex: 1 }} />
-          <input name="need" value={newTask.need} onChange={handleNewTaskChange} placeholder="Need" style={{ padding: 8, borderRadius: 4, border: "1px solid #ccc", flex: 1 }} />
+          <input
+            name="need"
+            type="date"
+            value={newTask.need}
+            onChange={handleNewTaskChange}
+            placeholder="ETC Date"
+            style={{ padding: 8, borderRadius: 4, border: "1px solid #ccc" }}
+          />
           <input name="comments" value={newTask.comments} onChange={handleNewTaskChange} placeholder="Comments" style={{ padding: 8, borderRadius: 4, border: "1px solid #ccc", flex: 1 }} />
           <select name="execute" value={newTask.execute} onChange={handleNewTaskChange} style={{ padding: 8, borderRadius: 4, border: "1px solid #ccc" }}>
             <option value="Y">Y</option>
@@ -667,7 +674,7 @@ function App() {
               <option key={member.id} value={member.username}>{member.username}</option>
             ))}
           </select>
-          <input name="commentArea" value={newTask.commentArea} onChange={handleNewTaskChange} placeholder="Comment Area" style={{ padding: 8, borderRadius: 4, border: "1px solid #ccc", flex: 1 }} />
+          <input name="commentArea" value={newTask.commentArea} onChange={handleNewTaskChange} placeholder="Feedback" style={{ padding: 8, borderRadius: 4, border: "1px solid #ccc", flex: 1 }} />
           <button onClick={addNewTask} style={{ background: "#22c55e", color: "white", padding: "8px 16px", borderRadius: 4, border: "none", cursor: "pointer" }}>Add</button>
         </div>
       </div>
@@ -722,11 +729,11 @@ function App() {
             <thead>
               <tr style={{ background: "#f3f4f6" }}>
                 <th style={{ border: "1px solid #ccc", padding: 8 }}>Goal</th>
-                <th style={{ border: "1px solid #ccc", padding: 8 }}>Need</th>
+                <th style={{ border: "1px solid #ccc", padding: 8 }}>ETC Date</th>
                 <th style={{ border: "1px solid #ccc", padding: 8 }}>Comments</th>
                 <th style={{ border: "1px solid #ccc", padding: 8 }}>Execute</th>
                 <th style={{ border: "1px solid #ccc", padding: 8 }}>Status</th>
-                <th style={{ border: "1px solid #ccc", padding: 8 }}>Comment Area</th>
+                <th style={{ border: "1px solid #ccc", padding: 8 }}>Feedback</th>
                 <th style={{ border: "1px solid #ccc", padding: 8 }}>Assigned To</th>
                 <th style={{ border: "1px solid #ccc", padding: 8 }}>Delete</th>
               </tr>
@@ -757,8 +764,8 @@ function App() {
                   </td>
                   <td style={{ border: "1px solid #ccc", padding: 8 }}>
                     <input
-                      type="text"
-                      value={item.need}
+                      type="date"
+                      value={item.need || ""}
                       onChange={(e) => {
                         const newValue = e.target.value;
                         setPhases(prevPhases => 
@@ -853,6 +860,7 @@ function App() {
                         debouncedUpdatePhaseItem(item.id, phase.name, { ...item, commentArea: newValue });
                       }}
                       style={{ width: "100%", padding: 4 }}
+                      placeholder="Feedback"
                     />
                   </td>
                   <td style={{ border: "1px solid #ccc", padding: 8 }}>
